@@ -1,0 +1,1 @@
+# Impacto-de-Eventos-Ex-genos-sobre-o-Mercado-Financeiro-
