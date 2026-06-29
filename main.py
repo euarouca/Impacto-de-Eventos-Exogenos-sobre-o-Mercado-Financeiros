@@ -12,8 +12,8 @@ import visualizacao
 ATIVOS = ["GC=F", "SI=F", "DX-Y.NYB", "BZ=F", "CL=F", "HG=F",
           "^GSPC", "^VIX", "EURUSD=X", "USDBRL=X", "BTC-USD", "ZW=F"]
 
-DATA_INICIO = "2021-06-01"
-DATA_FIM = "2023-12-31"
+DATA_INICIO = "2021-02-01"
+DATA_FIM = "2024-03-31"
 EVENTO_FOCO = "2022-02-24"
 LIMIAR_CORRELACAO = 0.25
 LIMIAR_Z = 2.0
@@ -65,8 +65,7 @@ def main():
                                               JANELA_EVENTO, JANELA_ESTIMACAO, LIMIAR_Z)
 
     tabelas = {
-        "tab_dataset": experimentos.tabela_dataset(tickers, eventos, retornos,
-                                                   f"{DATA_INICIO} a {DATA_FIM}"),
+        "tab_dataset": experimentos.tabela_dataset(tickers, eventos, retornos, f"{DATA_INICIO} a {DATA_FIM}"),
         "tab_mst": experimentos.tabela_mst(metricas_arvore),
         "tab_louvain": experimentos.tabela_louvain(detalhe_comunidades),
         "tab_dijkstra": experimentos.tabela_dijkstra(resultado_dijkstra),
@@ -75,16 +74,13 @@ def main():
     for nome, tabela in tabelas.items():
         tabela.to_csv(os.path.join(PASTA_SAIDA, f"{nome}.csv"), index=False)
 
-    visualizacao.desenhar_mst(arvore, setor_do_ativo,
-                              os.path.join(PASTA_SAIDA, "fig_mst.png"))
-    visualizacao.desenhar_comunidades(grafo_similaridade, particao,
-                                      os.path.join(PASTA_SAIDA, "fig_louvain.png"))
+    visualizacao.desenhar_mst(arvore, setor_do_ativo, os.path.join(PASTA_SAIDA, "fig_mst.png"))
+    visualizacao.desenhar_comunidades(grafo_similaridade, particao, os.path.join(PASTA_SAIDA, "fig_louvain.png"))
     visualizacao.desenhar_contagio(grafo_distancia, resultado_dijkstra["origem"],
                                    resultado_dijkstra["caminhos"],
                                    resultado_dijkstra["distancias"],
                                    os.path.join(PASTA_SAIDA, "fig_dijkstra.png"))
-    visualizacao.desenhar_impacto_por_evento(validacao,
-                                             os.path.join(PASTA_SAIDA, "fig_impacto_eventos.png"))
+    visualizacao.desenhar_impacto_por_evento(validacao, os.path.join(PASTA_SAIDA, "fig_impacto_eventos.png"))
 
 
 if __name__ == "__main__":
