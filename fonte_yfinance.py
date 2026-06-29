@@ -1,7 +1,6 @@
 import os
 import time
 import hashlib
-
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -16,16 +15,23 @@ except ImportError:
 INDICE_MERCADO = "^GSPC"
 PASTA_CACHE = "cache_yf"
 
+# Universo do estudo: 7 ativos, um por setor. Os rotulos sao os usados nas
+# figuras e no texto. O indice de mercado (^GSPC) NAO e vertice do grafo: serve
+# apenas de baseline no Modelo de Mercado (calculo do retorno anormal).
 CATALOGO_ATIVOS = {
-    "Energia": ["BZ=F", "CL=F", "XOM", "CVX", "SHEL", "BP", "TTE", "PETR4.SA", "PRIO3.SA"],
-    "Defesa": ["LMT", "RTX", "NOC", "GD", "BA"],
-    "Agricultura": ["ZW=F", "ZC=F", "ZS=F", "ADM", "MOS", "NTR", "BG"],
-    "Ciberseguranca": ["CRWD", "PANW", "FTNT", "CYBR"],
-    "Metais": ["GC=F", "SI=F", "HG=F", "PA=F"],
-    "Indices": ["^GSPC", "^IXIC", "^VIX", "^GDAXI", "BOVA11.SA"],
-    "Cambio": ["EURUSD=X", "USDBRL=X", "DX-Y.NYB"],
-    "Brasil": ["VALE3.SA", "ITUB4.SA", "WEGE3.SA", "SUZB3.SA"],
+    "Energia": ["BZ=F"],
+    "Defesa": ["LMT"],
+    "Agrobusiness": ["ZW=F"],
+    "Cibersegurança": ["CRWD"],
+    "Safe Havens": ["GC=F"],
+    "Indices e Cambio": ["RUB=X"],
+    "Mercado Brasileiro": ["PETR4.SA"],
 }
+
+# Setores cujos ativos recebem o choque sintetico nos dias de evento (usado
+# apenas no gerador offline gerar_retornos_sinteticos, para testes sem rede).
+SETORES_SENSIVEIS = ("Energia", "Defesa", "Mercado Brasileiro",
+                     "Agrobusiness", "Safe Havens", "Indices e Cambio")
 
 
 def tickers_dos_setores(setores):
@@ -122,6 +128,10 @@ def baixar_retornos(tickers, data_inicio, data_fim, incluir_indice=True, margem_
 
 
 def gerar_retornos_sinteticos(tickers, data_inicio, data_fim, eventos=None, semente=42):
+    # Garante o indice de mercado, exigido pelo Modelo de Mercado (retorno anormal).
+    tickers = list(tickers)
+    if INDICE_MERCADO not in tickers:
+        tickers = tickers + [INDICE_MERCADO]
     datas = pd.date_range(data_inicio, data_fim, freq="B")
     gerador = np.random.default_rng(semente)
     setor_do_ativo = setor_de_cada_ativo(tickers)
@@ -142,7 +152,7 @@ def gerar_retornos_sinteticos(tickers, data_inicio, data_fim, eventos=None, seme
             if data in retornos.index:
                 intensidade = abs(evento.get("goldstein", -5)) / 10.0
                 for ticker in tickers:
-                    if setor_do_ativo[ticker] in ("Energia", "Defesa", "Indices"):
+                    if setor_do_ativo[ticker] in SETORES_SENSIVEIS:
                         retornos.loc[data, ticker] += gerador.normal(0, 0.04) * intensidade
     return retornos
 

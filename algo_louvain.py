@@ -10,6 +10,11 @@ except ImportError:
 
 
 def detectar_comunidades(grafo_similaridade, semente=42):
+    # Grafo sem arestas: a modularidade e indefinida (divisao por zero no networkx).
+    # Retorna particao trivial -- cada no em sua propria comunidade -- com Q = 0.
+    if grafo_similaridade.number_of_edges() == 0:
+        return {no: i for i, no in enumerate(grafo_similaridade.nodes())}, 0.0
+
     if USA_LOUVAIN:
         particao = louvain.best_partition(grafo_similaridade, weight="weight",
                                           random_state=semente)

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import networkx as nx
 
 import fonte_yfinance
 
@@ -88,3 +89,47 @@ def tabela_validacao(retornos, tickers, eventos, janela_evento, janela_estimacao
             "car_acumulado": round(car_total, 3),
         })
     return pd.DataFrame(linhas)
+
+
+def arestas_evento_ativo(retornos, tickers, eventos, janela_evento, janela_estimacao, limiar_z):
+    """Lista as arestas de choque evento->ativo: o ativo teve retorno anormal
+    significativo (|z| >= limiar_z) na janela do evento, pelo modelo de mercado."""
+    arestas = []
+    for evento in eventos:
+        for ativo in tickers:
+            resultado = retorno_anormal(retornos, ativo, evento["data"],
+                                        janela_evento, janela_estimacao)
+            if resultado is None:
+                continue
+            car, z = resultado
+            if abs(z) >= limiar_z:
+                arestas.append({
+                    "evento": evento["rotulo"],
+                    "data": evento["data"],
+                    "ativo": ativo,
+                    "car": round(float(car), 4),
+                    "z": round(float(z), 2),
+                })
+    return arestas
+
+
+def grafo_evento_ativo(retornos, tickers, eventos, janela_evento, janela_estimacao, limiar_z):
+    """Monta o grafo bipartido evento->ativo. Vertices de evento tem bipartite=0
+    e vertices de ativo bipartite=1; cada aresta de choque guarda z, car e o sinal."""
+    grafo = nx.Graph()
+    for evento in eventos:
+        grafo.add_node(evento["rotulo"], bipartite=0, tipo="evento", data=evento["data"])
+    for ativo in tickers:
+        grafo.add_node(ativo, bipartite=1, tipo="ativo")
+    arestas = arestas_evento_ativo(retornos, tickers, eventos,
+                                   janela_evento, janela_estimacao, limiar_z)
+    for aresta in arestas:
+        grafo.add_edge(aresta["evento"], aresta["ativo"], z=aresta["z"], car=aresta["car"],
+                       sinal=1 if aresta["z"] > 0 else -1, weight=abs(aresta["z"]))
+    return grafo, arestas
+
+
+def tabela_evento_ativo(arestas):
+    if not arestas:
+        return pd.DataFrame(columns=["evento", "data", "ativo", "car", "z"])
+    return pd.DataFrame(arestas)

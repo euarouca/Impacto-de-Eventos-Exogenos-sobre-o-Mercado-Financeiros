@@ -9,13 +9,20 @@ import experimentos
 import visualizacao
 
 
-ATIVOS = ["GC=F", "SI=F", "DX-Y.NYB", "BZ=F", "CL=F", "HG=F",
-          "^GSPC", "^VIX", "EURUSD=X", "USDBRL=X", "BTC-USD", "ZW=F"]
+ATIVOS = [
+    'BZ=F',
+    'LMT',
+    'ZW=F',
+    'CRWD',
+    'GC=F',
+    'RUB=X',
+    'PETR4.SA'
+]
 
 DATA_INICIO = "2021-02-01"
 DATA_FIM = "2024-03-31"
 EVENTO_FOCO = "2022-02-24"
-LIMIAR_CORRELACAO = 0.25
+LIMIAR_CORRELACAO = 0.10
 LIMIAR_Z = 2.0
 JANELA_EVENTO = 3
 JANELA_ESTIMACAO = 60
@@ -46,6 +53,11 @@ def main():
 
     grafo_similaridade = grafo_base.grafo_correlacao(retornos, tickers, LIMIAR_CORRELACAO)
     grafo_distancia = grafo_base.grafo_distancia(retornos, tickers)
+    print("Similaridade -> nos:", grafo_similaridade.number_of_nodes(),
+          "| arestas:", grafo_similaridade.number_of_edges())
+    if grafo_similaridade.number_of_edges() == 0:
+        print("AVISO: nenhuma correlacao >= LIMIAR_CORRELACAO =", LIMIAR_CORRELACAO,
+              "-> Louvain sem comunidades. Reduza LIMIAR_CORRELACAO.")
 
     arvore = algo_mst.calcular_mst(grafo_distancia)
     metricas_arvore = algo_mst.metricas_mst(arvore)
@@ -64,12 +76,17 @@ def main():
     validacao = experimentos.tabela_validacao(retornos, tickers, eventos,
                                               JANELA_EVENTO, JANELA_ESTIMACAO, LIMIAR_Z)
 
+    grafo_evt_ativo, arestas_choque = experimentos.grafo_evento_ativo(
+        retornos, tickers, eventos, JANELA_EVENTO, JANELA_ESTIMACAO, LIMIAR_Z)
+    print("Arestas de choque evento->ativo:", len(arestas_choque))
+
     tabelas = {
         "tab_dataset": experimentos.tabela_dataset(tickers, eventos, retornos, f"{DATA_INICIO} a {DATA_FIM}"),
         "tab_mst": experimentos.tabela_mst(metricas_arvore),
         "tab_louvain": experimentos.tabela_louvain(detalhe_comunidades),
         "tab_dijkstra": experimentos.tabela_dijkstra(resultado_dijkstra),
         "tab_validacao": validacao,
+        "tab_evento_ativo": experimentos.tabela_evento_ativo(arestas_choque),
     }
     for nome, tabela in tabelas.items():
         tabela.to_csv(os.path.join(PASTA_SAIDA, f"{nome}.csv"), index=False)
@@ -81,6 +98,8 @@ def main():
                                    resultado_dijkstra["distancias"],
                                    os.path.join(PASTA_SAIDA, "fig_dijkstra.png"))
     visualizacao.desenhar_impacto_por_evento(validacao, os.path.join(PASTA_SAIDA, "fig_impacto_eventos.png"))
+    visualizacao.desenhar_evento_ativo(grafo_evt_ativo, setor_do_ativo,
+                                       os.path.join(PASTA_SAIDA, "fig_evento_ativo.png"))
 
 
 if __name__ == "__main__":

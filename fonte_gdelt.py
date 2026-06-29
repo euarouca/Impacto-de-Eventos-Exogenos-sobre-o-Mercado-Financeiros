@@ -13,8 +13,6 @@ CATALOGO_EVENTOS = [
     {"id": "israel_2023",       "data": "2023-10-07", "rotulo": "Ataque Hamas-Israel",            "goldstein": -10.0},
 ]
 
-import pandas_gbq
-
 
 def listar_eventos(data_inicio=None, data_fim=None):
     eventos = CATALOGO_EVENTOS
@@ -26,6 +24,7 @@ def listar_eventos(data_inicio=None, data_fim=None):
 
 
 def carregar_eventos_gdelt(data_inicio, data_fim, project_id, minimo_artigos=200, goldstein_maximo=-7.0, limite=50):
+    import pandas_gbq  # importado aqui para o projeto rodar sem a dependencia do BigQuery
     consulta = f'''
       SELECT CAST(SQLDATE AS STRING) AS data, EventCode, GoldsteinScale,
              Actor1Name, Actor2Name, NumArticles

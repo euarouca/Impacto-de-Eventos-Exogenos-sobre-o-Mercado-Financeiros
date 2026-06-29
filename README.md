@@ -72,10 +72,12 @@ Após `python main.py`, a pasta `resultados/` contém:
 | `tab_louvain.csv` | Comunidades detectadas × setor real, com tamanho e pureza |
 | `tab_dijkstra.csv` | Ordem de propagação do contágio a partir da origem |
 | `tab_validacao.csv` | Ativos com retorno anormal significativo por evento |
+| `tab_evento_ativo.csv` | Arestas de choque evento→ativo (CAR e z de cada par significativo) |
 | `fig_mst.png` | Árvore do mercado; nó maior = hub, cor = setor |
 | `fig_louvain.png` | Comunidades coloridas |
 | `fig_dijkstra.png` | Árvore de contágio a partir da origem |
 | `fig_impacto_eventos.png` | Nº de ativos impactados por evento |
+| `fig_evento_ativo.png` | Grafo bipartido evento→ativo; aresta azul = choque positivo, vermelha = negativo, espessura ∝ \|z\| |
 
 Como ler as métricas: o **hub** da MST é o principal eixo de transmissão de risco; a **modularidade Q** acima de 0,3 indica comunidades reais; a **pureza** perto de 1,0 mostra que as comunidades recuperaram os setores; no **Dijkstra**, os ativos mais próximos da origem são os primeiros alcançados pela cascata.
 
@@ -92,6 +94,7 @@ algo_louvain.py      Detecção de comunidades
 algo_dijkstra.py     Caminhos de contágio
 experimentos.py      Cálculo das tabelas e validação por estudo de eventos
 visualizacao.py      Geração de todas as figuras
+gera_evento_ativo.py Gera o grafo bipartido evento→ativo para um conjunto de ativos à escolha
 main.py              Roda tudo e salva os resultados
 ```
 

@@ -1,7 +1,4 @@
 comunidade,setor_dominante,tamanho,pureza
-0,Metais,4,0.75
-1,Indices,3,0.67
-2,Energia,2,1.0
-3,Cambio,1,1.0
-4,Cambio,1,1.0
-5,Agricultura,1,1.0
+1,Energia,5,0.2
+2,Cibersegurança,1,1.0
+0,Indices e Cambio,1,1.0

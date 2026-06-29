@@ -1,0 +1,19 @@
+evento,data,ativo,car,z
+Invasao da Ucrania,2022-02-24,LMT,0.1559,7.35
+Invasao da Ucrania,2022-02-24,ZW=F,0.1325,3.45
+Invasao da Ucrania,2022-02-24,CRWD,0.1716,3.39
+Invasao da Ucrania,2022-02-24,RUB=X,0.2846,13.54
+Sancoes a Russia,2022-02-28,BZ=F,0.0985,2.92
+Sancoes a Russia,2022-02-28,LMT,0.083,3.66
+Sancoes a Russia,2022-02-28,ZW=F,0.4195,9.18
+Sancoes a Russia,2022-02-28,RUB=X,0.181,7.34
+Embargo ao petroleo russo,2022-03-08,BZ=F,-0.1232,-2.95
+Embargo ao petroleo russo,2022-03-08,LMT,-0.0798,-2.58
+Embargo ao petroleo russo,2022-03-08,ZW=F,-0.302,-4.05
+Embargo ao petroleo russo,2022-03-08,CRWD,0.1263,2.06
+Embargo ao petroleo russo,2022-03-08,RUB=X,0.1794,2.65
+Colapso do Silicon Valley Bank,2023-03-10,BZ=F,-0.0985,-2.7
+Colapso do Silicon Valley Bank,2023-03-10,ZW=F,0.0845,2.88
+Colapso do Silicon Valley Bank,2023-03-10,GC=F,0.0514,3.51
+Ataque Hamas-Israel,2023-10-07,LMT,0.0846,4.27
+Ataque Hamas-Israel,2023-10-07,GC=F,0.0212,2.01
