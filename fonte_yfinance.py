@@ -15,9 +15,6 @@ except ImportError:
 INDICE_MERCADO = "^GSPC"
 PASTA_CACHE = "cache_yf"
 
-# Universo do estudo: 7 ativos, um por setor. Os rotulos sao os usados nas
-# figuras e no texto. O indice de mercado (^GSPC) NAO e vertice do grafo: serve
-# apenas de baseline no Modelo de Mercado (calculo do retorno anormal).
 CATALOGO_ATIVOS = {
     "Energia": ["BZ=F"],
     "Defesa": ["LMT"],
@@ -28,8 +25,6 @@ CATALOGO_ATIVOS = {
     "Mercado Brasileiro": ["PETR4.SA"],
 }
 
-# Setores cujos ativos recebem o choque sintetico nos dias de evento (usado
-# apenas no gerador offline gerar_retornos_sinteticos, para testes sem rede).
 SETORES_SENSIVEIS = ("Energia", "Defesa", "Mercado Brasileiro",
                      "Agrobusiness", "Safe Havens", "Indices e Cambio")
 

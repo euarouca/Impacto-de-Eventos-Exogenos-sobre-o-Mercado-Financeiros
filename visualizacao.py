@@ -122,13 +122,18 @@ def desenhar_evento_ativo(grafo, setor_do_ativo, caminho="fig_evento_ativo.png",
     altura = max(6.0, 0.7 * max(len(eventos), len(ativos)))
     plt.figure(figsize=(12, altura))
 
-    # Arestas: azul = retorno anormal positivo, vermelho = negativo; largura ~ |z|.
+    # Arestas DIRECIONADAS (setas evento->ativo): azul = AR positivo, vermelho = negativo;
+    # espessura proporcional ao peso w = |Goldstein| x |CAR|.
+    pesos = [d.get("peso", abs(d.get("z", 0.0))) for _, _, d in grafo.edges(data=True)]
+    peso_max = max(pesos) if pesos else 1.0
     for origem, destino, dados in grafo.edges(data=True):
         z = dados.get("z", 0.0)
         cor = "#2471a3" if z > 0 else "#c0392b"
-        largura = 1.0 + min(abs(z), 10) / 2.2
+        peso = dados.get("peso", abs(z))
+        largura = 1.0 + 5.0 * (peso / peso_max if peso_max else 0.0)
         nx.draw_networkx_edges(grafo, posicoes, edgelist=[(origem, destino)],
-                               edge_color=cor, width=largura, alpha=0.85)
+                               edge_color=cor, width=largura, alpha=0.85,
+                               arrows=True, arrowstyle="-|>", arrowsize=12, node_size=900)
 
     nx.draw_networkx_nodes(grafo, posicoes, nodelist=eventos, node_shape="s",
                            node_color="#34495e", node_size=900, edgecolors="white",
@@ -155,7 +160,7 @@ def desenhar_evento_ativo(grafo, setor_do_ativo, caminho="fig_evento_ativo.png",
     legenda += [Patch(color=cor, label=setor) for setor, cor in cor_do_setor.items()]
     plt.legend(handles=legenda, loc="upper center", bbox_to_anchor=(0.5, -0.01),
                ncol=3, fontsize=8, frameon=False)
-    titulo = "Grafo bipartido evento -> ativo (choques |z| >= 2)"
+    titulo = "Camada exogena: grafo direcionado evento -> ativo (|z| >= 2)"
     if subtitulo:
         titulo += f"\n{subtitulo}"
     plt.title(titulo, fontweight="bold", fontsize=11)

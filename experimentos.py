@@ -5,34 +5,33 @@ import networkx as nx
 import fonte_yfinance
 
 
-def retorno_anormal(retornos, ativo, data_evento, janela_evento, janela_estimacao,
-                    indice=fonte_yfinance.INDICE_MERCADO):
+def retorno_anormal(retornos, ativo, data_evento, janela_evento, janela_estimacao, janela_gap=10):
+
     datas = retornos.index
     posicoes = np.where(datas >= pd.to_datetime(data_evento))[0]
     if len(posicoes) == 0:
         return None
     inicio = posicoes[0]
     fim = min(inicio + janela_evento, len(datas) - 1)
-    if inicio - janela_estimacao < 0 or indice not in retornos.columns or ativo == indice:
+    # Janela de estimacao termina 'janela_gap' pregoes antes do evento (carencia)
+    fim_estimacao = inicio - janela_gap
+    inicio_estimacao = fim_estimacao - janela_estimacao
+    if inicio_estimacao < 0:
         return None
 
-    ativo_estimacao = retornos[ativo].iloc[inicio - janela_estimacao:inicio].values
-    indice_estimacao = retornos[indice].iloc[inicio - janela_estimacao:inicio].values
-    if len(ativo_estimacao) < 5 or np.std(indice_estimacao) == 0:
+    estimacao = retornos[ativo].iloc[inicio_estimacao:fim_estimacao].values
+    if len(estimacao) < 5:
         return None
-
-    beta, alfa = np.polyfit(indice_estimacao, ativo_estimacao, 1)
-    residuos = ativo_estimacao - (alfa + beta * indice_estimacao)
-    desvio_residuos = residuos.std()
-    if desvio_residuos == 0:
+    mu = float(np.mean(estimacao))
+    sigma = float(np.std(estimacao, ddof=1))
+    if sigma == 0:
         return None
 
     ativo_evento = retornos[ativo].iloc[inicio:fim + 1].values
-    indice_evento = retornos[indice].iloc[inicio:fim + 1].values
-    car = (ativo_evento - (alfa + beta * indice_evento)).sum()
+    car = float((ativo_evento - mu).sum())
     n = fim - inicio + 1
-    z = car / (desvio_residuos * np.sqrt(n))
-    return float(car), float(z)
+    z = car / (sigma * np.sqrt(n))
+    return car, float(z)
 
 
 def tabela_dataset(tickers, eventos, retornos, periodo):
@@ -68,14 +67,15 @@ def tabela_dijkstra(resultado):
     ])
 
 
-def tabela_validacao(retornos, tickers, eventos, janela_evento, janela_estimacao, limiar_z):
+def tabela_validacao(retornos, tickers, eventos, janela_evento, janela_estimacao, limiar_z,
+                     janela_gap=10):
     linhas = []
     for evento in eventos:
         significativos = 0
         car_total = 0.0
         for ativo in tickers:
             resultado = retorno_anormal(retornos, ativo, evento["data"],
-                                        janela_evento, janela_estimacao)
+                                        janela_evento, janela_estimacao, janela_gap)
             if resultado is None:
                 continue
             car, z = resultado
@@ -91,45 +91,49 @@ def tabela_validacao(retornos, tickers, eventos, janela_evento, janela_estimacao
     return pd.DataFrame(linhas)
 
 
-def arestas_evento_ativo(retornos, tickers, eventos, janela_evento, janela_estimacao, limiar_z):
-    """Lista as arestas de choque evento->ativo: o ativo teve retorno anormal
-    significativo (|z| >= limiar_z) na janela do evento, pelo modelo de mercado."""
+def arestas_evento_ativo(retornos, tickers, eventos, janela_evento, janela_estimacao, limiar_z, janela_gap=10):
     arestas = []
     for evento in eventos:
+        goldstein = float(evento.get("goldstein", 0.0))
         for ativo in tickers:
             resultado = retorno_anormal(retornos, ativo, evento["data"],
-                                        janela_evento, janela_estimacao)
+                                        janela_evento, janela_estimacao, janela_gap)
             if resultado is None:
                 continue
             car, z = resultado
             if abs(z) >= limiar_z:
+                peso = abs(goldstein) * abs(car)
                 arestas.append({
                     "evento": evento["rotulo"],
                     "data": evento["data"],
                     "ativo": ativo,
                     "car": round(float(car), 4),
                     "z": round(float(z), 2),
+                    "goldstein": goldstein,
+                    "peso": round(peso, 4),
                 })
     return arestas
 
 
-def grafo_evento_ativo(retornos, tickers, eventos, janela_evento, janela_estimacao, limiar_z):
-    """Monta o grafo bipartido evento->ativo. Vertices de evento tem bipartite=0
-    e vertices de ativo bipartite=1; cada aresta de choque guarda z, car e o sinal."""
-    grafo = nx.Graph()
+def grafo_evento_ativo(retornos, tickers, eventos, janela_evento, janela_estimacao,
+                       limiar_z, janela_gap=10):
+    # Camada exogena: grafo DIRECIONADO (evento -> ativo).
+    grafo = nx.DiGraph()
     for evento in eventos:
         grafo.add_node(evento["rotulo"], bipartite=0, tipo="evento", data=evento["data"])
     for ativo in tickers:
         grafo.add_node(ativo, bipartite=1, tipo="ativo")
     arestas = arestas_evento_ativo(retornos, tickers, eventos,
-                                   janela_evento, janela_estimacao, limiar_z)
+                                   janela_evento, janela_estimacao, limiar_z, janela_gap)
     for aresta in arestas:
         grafo.add_edge(aresta["evento"], aresta["ativo"], z=aresta["z"], car=aresta["car"],
-                       sinal=1 if aresta["z"] > 0 else -1, weight=abs(aresta["z"]))
+                       goldstein=aresta["goldstein"], peso=aresta["peso"],
+                       sinal=1 if aresta["z"] > 0 else -1, weight=aresta["peso"])
     return grafo, arestas
 
 
 def tabela_evento_ativo(arestas):
+    colunas = ["evento", "data", "ativo", "car", "z", "goldstein", "peso"]
     if not arestas:
-        return pd.DataFrame(columns=["evento", "data", "ativo", "car", "z"])
-    return pd.DataFrame(arestas)
+        return pd.DataFrame(columns=colunas)
+    return pd.DataFrame(arestas)[colunas]

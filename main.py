@@ -26,6 +26,8 @@ LIMIAR_CORRELACAO = 0.10
 LIMIAR_Z = 2.0
 JANELA_EVENTO = 3
 JANELA_ESTIMACAO = 60
+JANELA_GAP = 10
+JANELA_CONFLITO = ("2022-02-21", "2022-03-24")
 USAR_DADOS_REAIS = True
 PASTA_SAIDA = "resultados"
 
@@ -73,15 +75,21 @@ def main():
     print("Dijkstra -> origem:", resultado_dijkstra["origem"],
           "| primeiros:", [a for a, _ in resultado_dijkstra["primeiros_atingidos"]])
 
-    validacao = experimentos.tabela_validacao(retornos, tickers, eventos,
-                                              JANELA_EVENTO, JANELA_ESTIMACAO, LIMIAR_Z)
+    # Camada estrutural (MST/Louvain/Dijkstra) usa o periodo cheio; a camada exogena
+    # (estudo de eventos) foca nos eventos do conflito Russia-Ucrania.
+    eventos_conflito = [e for e in eventos
+                        if JANELA_CONFLITO[0] <= e["data"] <= JANELA_CONFLITO[1]]
+    print("Eventos do conflito analisados:", len(eventos_conflito))
+
+    validacao = experimentos.tabela_validacao(retornos, tickers, eventos_conflito,
+                                              JANELA_EVENTO, JANELA_ESTIMACAO, LIMIAR_Z, JANELA_GAP)
 
     grafo_evt_ativo, arestas_choque = experimentos.grafo_evento_ativo(
-        retornos, tickers, eventos, JANELA_EVENTO, JANELA_ESTIMACAO, LIMIAR_Z)
+        retornos, tickers, eventos_conflito, JANELA_EVENTO, JANELA_ESTIMACAO, LIMIAR_Z, JANELA_GAP)
     print("Arestas de choque evento->ativo:", len(arestas_choque))
 
     tabelas = {
-        "tab_dataset": experimentos.tabela_dataset(tickers, eventos, retornos, f"{DATA_INICIO} a {DATA_FIM}"),
+        "tab_dataset": experimentos.tabela_dataset(tickers, eventos_conflito, retornos, f"{DATA_INICIO} a {DATA_FIM}"),
         "tab_mst": experimentos.tabela_mst(metricas_arvore),
         "tab_louvain": experimentos.tabela_louvain(detalhe_comunidades),
         "tab_dijkstra": experimentos.tabela_dijkstra(resultado_dijkstra),
